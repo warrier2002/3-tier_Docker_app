@@ -1,18 +1,18 @@
 services:
   db:
     image: postgres:16-alpine
-    env_file: .env                 # gives it POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+    env_file: .env                 
     volumes:
-      - db_data:/var/lib/postgresql/data   # keeps your data even after restart
+      - db_data:/var/lib/postgresql/data   
     ports:
       - "5433:5432"                # 5433 on your computer -> 5432 in the container
-    healthcheck:                    # Docker checks if the DB is ready
+    healthcheck:                    # checks if the DB is ready
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # 2) BACKEND — our Flask API image from Docker Hub
+  # 2) BACKEND
   backend:
     image: ${DOCKERHUB_USER}/3tier-backend:latest
     env_file: .env                 # tells it how to connect to the database
@@ -21,13 +21,13 @@ services:
     depends_on:
       db:
         condition: service_healthy # wait until the database is ready
-    healthcheck:                    # Docker checks if the API answers
+    healthcheck:                    # checks if the API answers
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 15s
       timeout: 5s
       retries: 5
 
-  # 3) FRONTEND — our website image from Docker Hub
+  # 3) FRONTEND 
   frontend:
     image: ${DOCKERHUB_USER}/3tier-frontend:latest
     ports:

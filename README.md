@@ -1,187 +1,357 @@
-# 3-Tier App with Docker Compose (Beginner-Friendly)
+<div align="center">
 
-A small app that shows how a website, a backend program, and a database work
-together — all running in Docker. You start it with **one command**, and it
-opens in your browser.
+# 🚀 3-Tier Dockerized Application
 
-This repo is written for someone moving from **Product Support** into a
-**DevOps Engineer** role, so every term is explained in plain English.
+**A production-ready, containerized full-stack application built with React · Flask · PostgreSQL**
+
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
+
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-Published-blue?style=flat-square&logo=docker)](https://hub.docker.com/r/harshit122002)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+
+> **One command to start. Opens in your browser. Everything just works.**
+
+</div>
 
 ---
 
-## What does this project do?
+## 📖 Table of Contents
 
-It is a simple "to-do style" app. You can add, edit, and delete items. Behind
-the scenes:
+- [🏗️ Architecture](#%EF%B8%8F-architecture)
+- [✨ Features](#-features)
+- [📦 Prerequisites](#-prerequisites)
+- [⚡ Quick Start](#-quick-start)
+- [🛠️ Project Structure](#%EF%B8%8F-project-structure)
+- [🌐 Service URLs & Ports](#-service-urls--ports)
+- [🔧 Configuration](#-configuration)
+- [📜 Available Scripts](#-available-scripts)
+- [🔌 API Reference](#-api-reference)
+- [🐳 Docker Commands Cheat Sheet](#-docker-commands-cheat-sheet)
+- [🔨 Build & Publish Images](#-build--publish-images)
+- [🚨 Troubleshooting](#-troubleshooting)
+- [📚 DevOps Glossary](#-devops-glossary)
 
-- You type in the **website (frontend)**.
-- The website asks the **backend program** to save the data.
-- The **backend** stores it in the **database**.
-- The website shows the updated list.
+---
+
+## 🏗️ Architecture
 
 ```
-You (browser)  --->  Website  --->  Backend  --->  Database
-   localhost:8081     (React)     (Flask)      (PostgreSQL)
+┌─────────────────────────────────────────────────────────────┐
+│                      Docker Network                          │
+│                                                             │
+│  ┌──────────────┐     ┌──────────────┐     ┌────────────┐  │
+│  │   Frontend   │────▶│   Backend    │────▶│  Database  │  │
+│  │   (React)    │     │   (Flask)    │     │ (Postgres) │  │
+│  │  nginx:alpine│     │  gunicorn    │     │  16-alpine │  │
+│  │  Port: 8081  │     │  Port: 5000  │     │ Port: 5433 │  │
+│  └──────────────┘     └──────────────┘     └────────────┘  │
+│         ▲                                        │          │
+│         │                               ┌────────────────┐  │
+│    Your Browser                         │   db_data Vol  │  │
+│    localhost:8081                       │  (Persistent)  │  │
+│                                         └────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Request flow:**
+
+```
+User (Browser) → Frontend (React/Nginx) → Backend API (Flask) → Database (PostgreSQL)
+localhost:8081        :80 inside container      :5000                    :5432
 ```
 
 ---
 
-## What you need
+## ✨ Features
 
-- **Docker Desktop** installed (this gives you `docker` and `docker compose`).
-  Download from https://www.docker.com/products/docker-desktop/
-- That's it. You do **not** need to install Node.js, Python, or PostgreSQL.
+| Feature | Details |
+|---|---|
+| 🐳 **Fully Containerized** | All 3 tiers run in isolated Docker containers |
+| 💾 **Persistent Storage** | PostgreSQL data survives container restarts via named volumes |
+| ❤️ **Health Checks** | Docker waits for each service to be healthy before starting the next |
+| 🔄 **Reverse Proxy** | Nginx routes `/api/*` calls to the Flask backend automatically |
+| 📦 **Pre-built Images** | Pull from Docker Hub — no local builds required |
+| 🚀 **One-Command Start** | `./start.sh` spins everything up and confirms it's running |
+| 🔒 **Env-based Config** | Secrets & settings live in `.env`, never hard-coded |
+| 🏗️ **Multi-stage Builds** | Slim production images via Docker multi-stage Dockerfiles |
 
 ---
 
-## How to run it (3 steps)
+## 📦 Prerequisites
+
+You only need **one** thing installed on your machine:
+
+| Requirement | Version | Download |
+|---|---|---|
+| 🐳 Docker Desktop | Latest | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) |
+
+> **That's it.** Node.js, Python, and PostgreSQL are all bundled inside the containers. You don't install them on your machine.
+
+---
+
+## ⚡ Quick Start
+
+### Option A — Automated (Recommended)
 
 ```bash
-# 1. Copy the example settings file (you usually don't need to change it)
+# 1. Clone the repository
+git clone https://github.com/warrier2002/3-tier_Docker_app.git
+cd 3-tier_Docker_app
+
+# 2. Set up environment variables
 cp .env.example .env
 
-# 2. Start everything
+# 3. Launch with the startup script (starts + verifies health automatically)
+./start.sh
+```
+
+The script will:
+
+1. Run `docker compose up -d`
+2. Poll the backend health endpoint until it responds
+3. Poll the frontend until it responds
+4. Print the URL to open — **or** a detailed error if something fails
+
+### Option B — Manual
+
+```bash
+# 1. Set up environment variables
+cp .env.example .env
+
+# 2. Start all containers in detached (background) mode
 docker compose up -d
 
-# 3. Open the app in your browser
-#    http://localhost:8081
-```
-
-To stop it later:
-
-```bash
-docker compose down
-```
-
----
-
-## What just happened?
-
-`docker compose up` did this for you:
-
-1. **Downloaded** the 3 ready-made "images" from Docker Hub (like downloading
-   pre-installed app packages).
-2. **Started** 3 "containers" (running copies of those images):
-   - `db` – the database (PostgreSQL)
-   - `backend` – the API that talks to the database (Flask)
-   - `frontend` – the website you see (React, served by nginx)
-3. **Waited** for the database to be ready before starting the others (this is
-   called a *health check* + *depends_on*).
-
-You can see them running with:
-
-```bash
+# 3. Check that all 3 containers are healthy
 docker compose ps
+
+# 4. Open your browser
+#    👉 http://localhost:8081
 ```
 
----
-
-## The files (what each one is for)
-
-```
-docker-compose.yml   -> The "recipe" that starts all 3 containers together.
-.env                  -> Settings: passwords, ports, your Docker Hub username.
-.env.example          -> A safe copy of .env you can use as a template.
-README.md             -> This file.
-
-frontend/             -> The website code (React).
-  Dockerfile          -> Instructions to build the website's Docker image.
-  nginx.conf          -> Tells nginx to serve the site and forward /api to backend.
-  src/App.jsx         -> The page you see (buttons, list, form).
-  src/api.js          -> Talks to the backend using fetch().
-  src/styles.css      -> The glass-style look of the page.
-
-backend/              -> The program that saves data (Flask, Python).
-  Dockerfile          -> Instructions to build the backend's Docker image.
-  requirements.txt   -> Python libraries the backend needs.
-  app.py              -> The API code: /api/items (add/list/edit/delete) + /health.
-```
-
----
-
-## Beginner glossary (DevOps words explained)
-
-| Word            | Simple meaning                                                        |
-| --------------- | --------------------------------------------------------------------- |
-| **Image**       | A ready-to-run package of software (like a `.exe` installer in the cloud). |
-| **Container**   | A running copy of an image (the actual running app).                  |
-| **Docker Compose** | A tool that starts multiple containers together using one file.    |
-| **Volume**      | A storage box that keeps your data safe even if the container restarts. |
-| **Port**        | A door number. `8081` on your computer opens the website.            |
-| **Environment variable (.env)** | A setting passed into the container (e.g. password).     |
-| **Health check**| A small test Docker runs to see if a container is working.           |
-| **depends_on**  | "Start this container only after that one is healthy."              |
-| **Reverse proxy** | nginx sends `/api` requests to the backend automatically.          |
-
----
-
-## Common commands (cheat sheet)
+### To stop the application
 
 ```bash
-docker compose up -d      # Start everything in the background
-docker compose ps        # See running containers and their health
-docker compose logs -f   # Watch live logs (press Ctrl+C to stop)
-docker compose down      # Stop everything (keeps the database data)
-docker compose down -v   # Stop AND delete the database data
-docker compose restart backend   # Restart just the backend
+docker compose down           # stops containers, keeps database data
+docker compose down -v        # stops containers AND deletes database data
 ```
 
 ---
 
-## Where are the images?
+## 🛠️ Project Structure
 
-The website and backend images are already built and stored on Docker Hub, so
-you don't have to build them:
-
-- Frontend: https://hub.docker.com/r/harshit122002/3tier-frontend
-- Backend:  https://hub.docker.com/r/harshit122002/3tier-backend
+```
+3-tier_Docker_app/
+│
+├── 📄 docker-compose.yml      # Orchestrates all 3 services together
+├── 📄 .env.example            # Template for environment variables
+├── 📄 .env                    # Your actual secrets (git-ignored)
+├── 📄 start.sh                # Smart startup script with health checks
+├── 📄 README.md               # This file
+│
+├── 📁 frontend/               # React SPA served by Nginx
+│   ├── Dockerfile             # Multi-stage: Node (build) → Nginx (serve)
+│   ├── nginx.conf             # Reverse-proxies /api/* to the backend
+│   ├── src/
+│   │   ├── App.jsx            # Main UI component (CRUD interface)
+│   │   ├── api.js             # Fetch-based API client
+│   │   └── styles.css         # Glassmorphism UI styles
+│   └── package.json
+│
+└── 📁 backend/                # Flask REST API + Gunicorn WSGI server
+    ├── Dockerfile             # Multi-stage: builder → slim runtime
+    ├── app.py                 # API routes: /api/items, /health
+    └── requirements.txt       # Python dependencies
+```
 
 ---
 
-## Try the API directly (optional)
+## 🌐 Service URLs & Ports
 
-You can talk to the backend without the website, using `curl` or any API tool:
+| Service | URL | Internal Port | External Port |
+|---|---|---|---|
+| 🖥️ **Frontend** | <http://localhost:8081> | `80` | `8081` |
+| ⚙️ **Backend API** | <http://localhost:5000> | `5000` | `5000` |
+| 🔍 **Backend Health** | <http://localhost:5000/health> | `5000` | `5000` |
+| 🗄️ **PostgreSQL DB** | `localhost:5433` | `5432` | `5433` |
+
+---
+
+## 🔧 Configuration
+
+Copy `.env.example` to `.env` and edit as needed:
+
+```dotenv
+# ── Docker Hub ──────────────────────────────────────────────
+DOCKERHUB_USER=youruser          # Your Docker Hub username
+
+# ── PostgreSQL ───────────────────────────────────────────────
+POSTGRES_USER=appuser            # Database username
+POSTGRES_PASSWORD=apppass        # Database password (change in production!)
+POSTGRES_DB=appdb                # Database name
+POSTGRES_PORT=5432               # Internal DB port
+POSTGRES_HOST=db                 # Service name (used inside Docker network)
+```
+
+> ⚠️ **Never commit your `.env` file to version control.** It's already in `.gitignore`.
+
+---
+
+## 📜 Available Scripts
+
+### `./start.sh` — Smart Startup Script
 
 ```bash
-# Add an item
+./start.sh                       # Uses docker-compose.yml (default)
+./start.sh docker-compose.yml    # Specify a custom compose file
+```
+
+What it does:
+
+- ✅ Starts all services in detached mode
+- ✅ Waits up to **120 seconds** for the backend health endpoint
+- ✅ Waits up to **120 seconds** for the frontend to respond
+- ✅ Prints a success banner with the URL
+- ❌ On failure: dumps the last 40 lines of logs and exits with code `1`
+
+---
+
+## 🔌 API Reference
+
+Base URL: `http://localhost:8081/api`
+
+### Items Endpoints
+
+| Method | Endpoint | Description | Body |
+|---|---|---|---|
+| `GET` | `/api/items` | List all items | — |
+| `POST` | `/api/items` | Create a new item | `{"name": "...", "description": "..."}` |
+| `PUT` | `/api/items/:id` | Update an item | `{"name": "...", "description": "..."}` |
+| `DELETE` | `/api/items/:id` | Delete an item | — |
+| `GET` | `/health` | Backend health check | — |
+
+### Example cURL Requests
+
+```bash
+# ── Create an item ──────────────────────────────────────────
 curl -X POST http://localhost:8081/api/items \
   -H 'Content-Type: application/json' \
-  -d '{"name":"Keyboard","description":"wireless"}'
+  -d '{"name": "Mechanical Keyboard", "description": "Cherry MX Blue switches"}'
 
-# See all items
+# ── List all items ──────────────────────────────────────────
 curl http://localhost:8081/api/items
 
-# Edit item number 1
+# ── Update item #1 ──────────────────────────────────────────
 curl -X PUT http://localhost:8081/api/items/1 \
   -H 'Content-Type: application/json' \
-  -d '{"name":"Keyboard v2","description":"mechanical"}'
+  -d '{"name": "Keyboard v2", "description": "Silent switches"}'
 
-# Delete item number 1
+# ── Delete item #1 ──────────────────────────────────────────
 curl -X DELETE http://localhost:8081/api/items/1
+
+# ── Health check ────────────────────────────────────────────
+curl http://localhost:5000/health
 ```
 
 ---
 
-## If something goes wrong
-
-| Problem                          | Try this                                                      |
-| -------------------------------- | ------------------------------------------------------------- |
-| Port already in use error        | Another app uses 8081/5000/5433. Close it, or change the port in `docker-compose.yml`. |
-| Page loads but buttons don't work| Wait a few seconds; the backend may still be starting. Check `docker compose ps`. |
-| Forgot how to stop it            | Run `docker compose down`.                                   |
-| Want to start from scratch       | Run `docker compose down -v` then `docker compose up -d`.    |
-
----
-
-## Want to rebuild the images yourself? (DevOps practice)
+## 🐳 Docker Commands Cheat Sheet
 
 ```bash
-docker login                       # sign in to Docker Hub
-docker build -t youruser/3tier-backend:latest ./backend
-docker build -t youruser/3tier-frontend:latest ./frontend
-docker push youruser/3tier-backend:latest
-docker push youruser/3tier-frontend:latest
+# ── Lifecycle ────────────────────────────────────────────────
+docker compose up -d              # Start all services in background
+docker compose down               # Stop & remove containers (keeps data)
+docker compose down -v            # Stop, remove containers AND volumes (data lost)
+docker compose restart backend    # Restart only the backend service
+
+# ── Monitoring ──────────────────────────────────────────────
+docker compose ps                 # Show running containers & health status
+docker compose logs -f            # Stream live logs from all services
+docker compose logs -f backend    # Stream live logs from backend only
+docker compose logs --tail=50     # Last 50 lines from all services
+
+# ── Debugging ────────────────────────────────────────────────
+docker compose exec backend sh    # Open a shell inside the backend container
+docker compose exec db psql -U appuser -d appdb  # Connect to the database
+docker stats                      # Real-time CPU / memory usage
 ```
 
-Then change `DOCKERHUB_USER` in `.env` to `youruser` and run
-`docker compose up -d` again.
+---
+
+## 🔨 Build & Publish Images
+
+Want to build and push your own images? Follow these steps:
+
+```bash
+# 1. Log in to Docker Hub
+docker login
+
+# 2. Build both images
+docker build -t <your-dockerhub-user>/3tier-backend:latest  ./backend
+docker build -t <your-dockerhub-user>/3tier-frontend:latest ./frontend
+
+# 3. Push to Docker Hub
+docker push <your-dockerhub-user>/3tier-backend:latest
+docker push <your-dockerhub-user>/3tier-frontend:latest
+
+# 4. Update .env to point to your images
+#    DOCKERHUB_USER=<your-dockerhub-user>
+
+# 5. Re-pull and start
+docker compose pull && docker compose up -d
+```
+
+### Pre-built Images on Docker Hub
+
+| Image | Link |
+|---|---|
+| 🖥️ Frontend | [harshit122002/3tier-frontend](https://hub.docker.com/r/harshit122002/3tier-frontend) |
+| ⚙️ Backend | [harshit122002/3tier-backend](https://hub.docker.com/r/harshit122002/3tier-backend) |
+
+---
+
+## 🚨 Troubleshooting
+
+| Problem | Cause | Solution |
+|---|---|---|
+| `Port already in use` | Another app is using `8081`, `5000`, or `5433` | Close the conflicting app, or change the port mapping in `docker-compose.yml` |
+| Page loads but buttons don't work | Backend still starting | Wait ~15s and refresh. Run `docker compose ps` to check health status. |
+| `Cannot connect to Docker daemon` | Docker Desktop isn't running | Open Docker Desktop and wait for it to fully start |
+| Database connection error | DB not ready yet | Run `docker compose ps` — wait for `db` to show `healthy` |
+| Want a clean slate | Stale data or config | Run `docker compose down -v && docker compose up -d` |
+| `./start.sh: Permission denied` | Script not executable | Run `chmod +x start.sh` then try again |
+| Images not found | Wrong `DOCKERHUB_USER` in `.env` | Check `.env` — `DOCKERHUB_USER` must match the Docker Hub account |
+
+---
+
+## 📚 DevOps Glossary
+
+> New to DevOps? Here's what every term in this project means in plain English.
+
+| Term | Plain-English Meaning |
+|---|---|
+| **Image** | A pre-packaged snapshot of an app with everything it needs to run (like a `.zip` of software). |
+| **Container** | A running copy of an image — the actual live process. |
+| **Docker Compose** | A tool that reads `docker-compose.yml` and starts multiple containers together as a group. |
+| **Volume** | A named storage area that lives outside the container, so your data survives restarts. |
+| **Port mapping** | A bridge: `8081:80` means "if I visit port 8081 on my machine, forward it to port 80 inside the container." |
+| **`.env` file** | A file of key=value settings (like passwords) that Docker reads at startup. |
+| **Health check** | A periodic test Docker runs to confirm a container is actually working, not just running. |
+| **`depends_on`** | Tells Docker Compose: "don't start this container until *that* one is healthy." |
+| **Reverse proxy** | Nginx acts as a traffic director: requests to `/api/*` are forwarded to the Flask backend. |
+| **Multi-stage build** | A Dockerfile technique: use a large image to build, then copy only the output into a tiny image. |
+| **Gunicorn** | A production-grade Python server that runs the Flask app (better than `flask run` alone). |
+| **Detached mode (`-d`)** | Starts containers in the background so your terminal is freed up. |
+
+---
+
+<div align="center">
+
+**Made with ❤️ as a DevOps learning project**
+
+*From Product Support → DevOps Engineer — one container at a time.*
+
+</div>
